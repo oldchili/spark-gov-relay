@@ -127,6 +127,7 @@ contract DeployLZGovBridgeExecutor is Script {
 
         vm.startBroadcast();
 
+        // Note: For uniformity we deploy with same params as other executors, consider changing
         address executor = Deploy.deployExecutor(0, 7 days);
         address receiver = Deploy.deployLZGovBridgeReceiver({
             govOappReceiver : govOappReceiver,

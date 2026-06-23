@@ -3,9 +3,8 @@ pragma solidity ^0.8.0;
 
 import './CrosschainTestBase.sol';
 
-import { LZBridgeTesting }            from 'lib/xchain-helpers/src/testing/bridges/LZBridgeTesting.sol';
-import { LZGovBridgeForwarder }       from 'lib/xchain-helpers/src/forwarders/LZGovBridgeForwarder.sol';
-import { GovernanceOAppReceiverMock } from 'lib/xchain-helpers/test/mocks/lz/GovernanceOAppReceiverMock.sol';
+import { LZBridgeTesting }      from 'lib/xchain-helpers/src/testing/bridges/LZBridgeTesting.sol';
+import { LZGovBridgeForwarder } from 'lib/xchain-helpers/src/forwarders/LZGovBridgeForwarder.sol';
 
 import { LZGovBridgeCrosschainPayload } from './payloads/LZGovBridgeCrosschainPayload.sol';
 import { Deploy }                       from '../deploy/Deploy.sol';
@@ -25,20 +24,22 @@ contract LZGovBridgeCrosschainTest is CrosschainTestBase {
     using DomainHelpers   for *;
     using LZBridgeTesting for *;
 
-    uint32  constant ENDPOINT_ID_BASE = 30184;
-    address constant ENDPOINT_BASE    = 0x1a44076050125825900e736c501f859c50fE728c;
+    uint32  constant ENDPOINT_ID_AVALANCHE = 30106;
+
+    // Live GovernanceOAppReceiver deployed on Avalanche
+    address constant GOV_OAPP_RECEIVER_AVALANCHE = 0x6fdd46947ca6903c8c159d1dF2012Bc7fC5cEeec;
 
     IChainLog constant chainlog = IChainLog(0xdA0Ab1e0017DEbCd72Be8599041a2aa3bA7e740F);
 
     address govOappSender;
 
-    GovernanceOAppReceiverMock govOappReceiver;
+    address govOappReceiver;
 
     function deployCrosschainPayload(IPayload targetPayload, address _bridgeReceiver)
         internal override returns (IPayload)
     {
         return IPayload(new LZGovBridgeCrosschainPayload(
-            ENDPOINT_ID_BASE,
+            ENDPOINT_ID_AVALANCHE,
             govOappSender,
             _bridgeReceiver,
             targetPayload
@@ -49,22 +50,18 @@ contract LZGovBridgeCrosschainTest is CrosschainTestBase {
         mainnet.selectFork();
         govOappSender = chainlog.getAddress("LZ_GOV_SENDER");
 
-        remote = getChain('base').createFork();
+        remote = getChain('avalanche').createFork();
         bridge = LZBridgeTesting.createLZBridge(mainnet, remote);
 
         remote.selectFork();
 
-        govOappReceiver = new GovernanceOAppReceiverMock(
-            LZGovBridgeForwarder.ENDPOINT_ID_ETHEREUM,
-            bytes32(uint256(uint160(govOappSender))),
-            ENDPOINT_BASE,
-            address(this)
-        );
+        // Use the live GovernanceOAppReceiver as-is (its peer already points at govOappSender).
+        govOappReceiver = GOV_OAPP_RECEIVER_AVALANCHE;
 
         // bridgeExecutor will be the next contract deployed on this fork (by CrosschainTestBase.setUp())
         address expectedExecutor = vm.computeCreateAddress(address(this), vm.getNonce(address(this)) + 1);
         bridgeReceiver = Deploy.deployLZGovBridgeReceiver({
-            govOappReceiver : address(govOappReceiver),
+            govOappReceiver : govOappReceiver,
             srcEid          : LZGovBridgeForwarder.ENDPOINT_ID_ETHEREUM,
             srcAuthority    : L1_SPARK_PROXY,
             executor        : expectedExecutor
@@ -75,12 +72,12 @@ contract LZGovBridgeCrosschainTest is CrosschainTestBase {
         address govOwner = IGovOappSender(govOappSender).owner();
         vm.startPrank(govOwner);
         IGovOappSender(govOappSender).setPeer(
-            ENDPOINT_ID_BASE,
-            bytes32(uint256(uint160(address(govOappReceiver))))
+            ENDPOINT_ID_AVALANCHE,
+            bytes32(uint256(uint160(govOappReceiver)))
         );
         IGovOappSender(govOappSender).setCanCallTarget(
             L1_SPARK_PROXY,
-            ENDPOINT_ID_BASE,
+            ENDPOINT_ID_AVALANCHE,
             bytes32(uint256(uint160(bridgeReceiver))),
             true
         );
@@ -90,7 +87,7 @@ contract LZGovBridgeCrosschainTest is CrosschainTestBase {
     }
 
     function relayMessagesAcrossBridge() internal override {
-        bridge.relayMessagesToDestination(true, govOappSender, address(govOappReceiver));
+        bridge.relayMessagesToDestination(true, govOappSender, govOappReceiver);
     }
 
 }
