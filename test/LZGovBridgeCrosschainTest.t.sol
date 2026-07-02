@@ -15,7 +15,6 @@ interface IChainLog {
 
 interface IGovOappSender {
     function owner() external view returns (address);
-    function setPeer(uint32 _eid, bytes32 _peer) external;
     function setCanCallTarget(address _srcSender, uint32 _dstEid, bytes32 _dstTarget, bool _canCall) external;
 }
 
