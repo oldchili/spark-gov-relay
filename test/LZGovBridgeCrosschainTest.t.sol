@@ -71,10 +71,6 @@ contract LZGovBridgeCrosschainTest is CrosschainTestBase {
         mainnet.selectFork();
         address govOwner = IGovOappSender(govOappSender).owner();
         vm.startPrank(govOwner);
-        IGovOappSender(govOappSender).setPeer(
-            ENDPOINT_ID_AVALANCHE,
-            bytes32(uint256(uint160(govOappReceiver)))
-        );
         IGovOappSender(govOappSender).setCanCallTarget(
             L1_SPARK_PROXY,
             ENDPOINT_ID_AVALANCHE,

@@ -31,25 +31,25 @@ contract LZGovBridgeCrosschainPayload is CrosschainPayload {
 
         bytes memory message = encodeCrosschainExecutionMessage();
 
-        MessagingFee memory fee = LZGovBridgeForwarder.quote(
-            govOapp,
-            dstEid,
-            receiver,
-            message,
-            options,
-            false
-        );
+        MessagingFee memory fee = LZGovBridgeForwarder.quote({
+            govOapp      : govOapp,
+            dstEid       : dstEid,
+            dstTarget    : receiver,
+            message      : message,
+            extraOptions : options,
+            payInLzToken : false
+        });
 
-        LZGovBridgeForwarder.sendMessage(
-            govOapp,
-            dstEid,
-            receiver,
-            message,
-            options,
-            msg.sender,
-            fee,
-            address(0)
-        );
+        LZGovBridgeForwarder.sendMessage({
+            govOapp       : govOapp,
+            dstEid        : dstEid,
+            dstTarget     : receiver,
+            message       : message,
+            extraOptions  : options,
+            refundAddress : msg.sender,
+            fee           : fee,
+            lzToken       : address(0)
+        });
     }
 
 }
