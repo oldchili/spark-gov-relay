@@ -5,7 +5,8 @@ import { console } from "forge-std/console.sol";
 
 import { Ethereum } from "lib/spark-address-registry/src/Ethereum.sol";
 
-import { LZForwarder } from "lib/xchain-helpers/src/forwarders/LZForwarder.sol";
+import { LZForwarder }            from "lib/xchain-helpers/src/forwarders/LZForwarder.sol";
+import { LZGovBridgeForwarder }   from "lib/xchain-helpers/src/forwarders/LZGovBridgeForwarder.sol";
 
 import { Script } from 'forge-std/Script.sol';
 
@@ -111,6 +112,35 @@ contract DeployAvalancheExecutor is Script {
         console.log("executor deployed at:", executor);
         console.log("receiver deployed at:", receiver);
 
+        Deploy.setUpExecutorPermissions(executor, receiver, msg.sender);
+
+        vm.stopBroadcast();
+    }
+
+}
+
+contract DeployLZGovBridgeExecutor is Script {
+
+    function run() public {
+        vm.createSelectFork(vm.envString("DESTINATION_RPC_URL"));
+        address govOappReceiver = vm.envAddress("GOV_OAPP_RECEIVER");
+
+        vm.startBroadcast();
+
+        // Note: For uniformity we deploy with same params as other executors, consider changing
+        address executor = Deploy.deployExecutor(0, 7 days);
+        address receiver = Deploy.deployLZGovBridgeReceiver({
+            govOappReceiver : govOappReceiver,
+            srcEid          : LZGovBridgeForwarder.ENDPOINT_ID_ETHEREUM,
+            srcAuthority    : Ethereum.SPARK_PROXY,
+            executor        : executor
+        });
+
+        console.log("executor deployed at:", executor);
+        console.log("receiver deployed at:", receiver);
+
+        // Note: this does not grant a GUARDIAN_ROLE on the executor to anyone (same behaviour as the other scripts).
+        // That role should be set modifying the script or through a message.
         Deploy.setUpExecutorPermissions(executor, receiver, msg.sender);
 
         vm.stopBroadcast();

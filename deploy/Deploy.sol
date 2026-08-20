@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.0;
 
-import { ArbitrumReceiver } from 'lib/xchain-helpers/src/receivers/ArbitrumReceiver.sol';
-import { LZReceiver }       from 'lib/xchain-helpers/src/receivers/LZReceiver.sol';
-import { OptimismReceiver } from 'lib/xchain-helpers/src/receivers/OptimismReceiver.sol';
+import { ArbitrumReceiver }    from 'lib/xchain-helpers/src/receivers/ArbitrumReceiver.sol';
+import { LZReceiver }          from 'lib/xchain-helpers/src/receivers/LZReceiver.sol';
+import { LZGovBridgeReceiver } from 'lib/xchain-helpers/src/receivers/LZGovBridgeReceiver.sol';
+import { OptimismReceiver }    from 'lib/xchain-helpers/src/receivers/OptimismReceiver.sol';
 
 import { Executor } from 'src/Executor.sol';
 
@@ -44,6 +45,22 @@ library Deploy {
             _target              : executor,
             _delegate            : delegate,
             _owner               : owner
+        }));
+    }
+
+    function deployLZGovBridgeReceiver(
+        address govOappReceiver,
+        uint32  srcEid,
+        address srcAuthority,
+        address executor
+    )
+        internal returns (address receiver)
+    {
+        receiver = address(new LZGovBridgeReceiver({
+            _govOappReceiver : govOappReceiver,
+            _srcEid          : srcEid,
+            _srcAuthority    : srcAuthority,
+            _target          : executor
         }));
     }
 
